@@ -1,0 +1,538 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Code2, Database, Cpu, Layout, Terminal, Github,
+  Linkedin, Mail, Twitter, X, ChevronRight, ExternalLink,
+  Menu, Server, Bot, Layers
+} from 'lucide-react';
+
+// --- Dados Mock (Baseados no PRD - Secção 8) ---
+const PORTFOLIO_DATA = {
+  hero: {
+    name: "Alex Silva",
+    title: "Engenheiro de Software & Especialista em Automação",
+    description: "Construo sistemas escaláveis, integrações complexas e produtos digitais com um foco profundo em desempenho e inteligência artificial."
+  },
+  about: {
+    text: [
+      "Sou um desenvolvedor apaixonado por resolver problemas complexos através de código limpo e arquiteturas eficientes. Com mais de 5 anos de experiência, especializei-me na criação de soluções end-to-end.",
+      "O meu foco atual é a integração de Agentes de IA e automação de processos para escalar operações de negócios. Acredito que a tecnologia deve servir como alavanca para o potencial humano.",
+      "Quando não estou a programar, estou a explorar novas frameworks, a contribuir para projetos open-source ou a partilhar conhecimento com a comunidade."
+    ],
+    specialties: ["Automação", "AI Agents", "APIs Rest/GraphQL", "Arquitetura Cloud"]
+  },
+  skills: [
+    { category: "Frontend", icon: <Layout className="w-6 h-6" />, items: ["React", "Next.js", "Tailwind CSS", "TypeScript"] },
+    { category: "Backend", icon: <Server className="w-6 h-6" />, items: ["Node.js", "Python", "Go", "PostgreSQL", "Redis"] },
+    { category: "AI & Automação", icon: <Bot className="w-6 h-6" />, items: ["LangChain", "OpenAI API", "Puppeteer", "Docker"] },
+    { category: "Arquitetura", icon: <Layers className="w-6 h-6" />, items: ["Microserviços", "AWS", "CI/CD", "System Design"] }
+  ],
+  projects: [
+    {
+      id: "p1",
+      title: "Plataforma de Automação de E-commerce",
+      shortDescription: "Sistema automatizado para sincronização de inventário e precificação dinâmica usando IA.",
+      problem: "O cliente perdia horas a atualizar preços manualmente em múltiplos marketplaces, resultando em perdas financeiras e stock desatualizado.",
+      solution: "Desenvolvi um sistema distribuído em Python e Node.js que consome APIs dos marketplaces, analisa concorrência com IA e ajusta preços em tempo real.",
+      result: "Aumento de 35% nas vendas e redução de 100% no trabalho manual de atualização de stock.",
+      technologies: ["Python", "Node.js", "PostgreSQL", "AWS Lambda", "OpenAI API"],
+      thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800",
+      category: "Backend & AI"
+    },
+    {
+      id: "p2",
+      title: "Dashboard Financeiro SaaS",
+      shortDescription: "Aplicação web para visualização de métricas financeiras de startups em tempo real.",
+      problem: "Startups tinham dificuldade em agregar dados de Stripe, bancos e software de contabilidade num único ecrã.",
+      solution: "Criada uma SPA em React com Next.js, utilizando Tailwind para UI. O backend em Go processa milhões de transações diárias.",
+      result: "Mais de 200 startups ativas na plataforma. Latência de carregamento de dashboard reduzida para < 800ms.",
+      technologies: ["React", "Next.js", "Tailwind CSS", "Go", "GraphQL"],
+      thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800",
+      category: "Fullstack"
+    },
+    {
+      id: "p3",
+      title: "Agente de Apoio ao Cliente",
+      shortDescription: "Chatbot inteligente treinado na base de conhecimento da empresa para resolver tickets de nível 1.",
+      problem: "Equipa de suporte sobrecarregada com questões repetitivas e tempo de resposta alto (> 24h).",
+      solution: "Implementação de um pipeline RAG (Retrieval-Augmented Generation) integrando a documentação interna com LLMs.",
+      result: "Resolução automática de 42% dos tickets. Tempo médio de resposta reduzido para 5 segundos.",
+      technologies: ["LangChain", "Pinecone", "Python", "FastAPI"],
+      thumbnail: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&q=80&w=800",
+      category: "AI Agents"
+    }
+  ],
+  experience: [
+    {
+      company: "TechNova Solutions",
+      role: "Senior Software Engineer",
+      period: "2022 – Presente",
+      description: "Lidero a equipa de backend na reestruturação da arquitetura legada para microserviços. Implementei pipelines de CI/CD que reduziram o tempo de deploy em 60%."
+    },
+    {
+      company: "DataFlow Analytics",
+      role: "Fullstack Developer",
+      period: "2019 – 2022",
+      description: "Desenvolvimento de dashboards interativos e APIs RESTful de alta performance. Criei o sistema de autenticação unificado da empresa."
+    },
+    {
+      company: "StartupLab X",
+      role: "Junior Developer",
+      period: "2018 – 2019",
+      description: "Criação de landing pages, manutenção de bases de dados MySQL e automação de relatórios diários em Python."
+    }
+  ],
+  contacts: [
+    { platform: "GitHub", url: "#", icon: <Github className="w-5 h-5" /> },
+    { platform: "LinkedIn", url: "#", icon: <Linkedin className="w-5 h-5" /> },
+    { platform: "Twitter", url: "#", icon: <Twitter className="w-5 h-5" /> },
+    { platform: "Email", url: "mailto:hello@example.com", icon: <Mail className="w-5 h-5" /> }
+  ]
+};
+
+// --- Componentes Reutilizáveis ---
+
+// Animação ao fazer scroll (Reveal On Scroll)
+const Reveal = ({ children, delay = 0, className = "" }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`transform-gpu transition-all duration-1000 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+        } ${className}`}
+      style={{ transitionDelay: `${delay}ms`, willChange: 'opacity, transform' }}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Badge Neon
+const NeonBadge = ({ children }) => (
+  <span className="px-3 py-1 text-xs font-medium rounded-full bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/30 backdrop-blur-sm">
+    {children}
+  </span>
+);
+
+// Cabeçalho de Secção
+const SectionHeading = ({ title, subtitle }) => (
+  <div className="mb-12 text-center md:text-left">
+    <Reveal>
+      <h2 className="text-3xl md:text-4xl font-bold font-sora text-white mb-3">
+        {title}
+      </h2>
+      {subtitle && <p className="text-[#BDC3C7] text-lg max-w-2xl">{subtitle}</p>}
+      <div className="h-1 w-20 bg-gradient-to-r from-[#00D4FF] to-[#2E86C1] mt-4 rounded-full md:mx-0 mx-auto"></div>
+    </Reveal>
+  </div>
+);
+
+// --- Componente Principal ---
+export default function App() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+
+  // Monitorizar scroll para a Navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Bloquear scroll do body quando o modal está aberto
+  useEffect(() => {
+    if (selectedProject || mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [selectedProject, mobileMenuOpen]);
+
+  const navLinks = [
+    { name: "Sobre", href: "#about" },
+    { name: "Skills", href: "#skills" },
+    { name: "Projetos", href: "#projects" },
+    { name: "Experiência", href: "#experience" },
+    { name: "Contacto", href: "#contact" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#0D1B2A] text-[#BDC3C7] font-inter selection:bg-[#00D4FF]/30 selection:text-white">
+      {/* Dynamic Background Noise/Glow (Optimized para Performance) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden isolate">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] transform-gpu"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/10 rounded-full blur-[120px] transform-gpu"></div>
+      </div>
+
+      {/* 1. Navbar */}
+      <nav className={`fixed top-0 w-full z-40 transition-all duration-300 ${isScrolled ? 'glass-panel py-3 border-b border-[#00D4FF]/20' : 'bg-transparent py-5'}`}>
+        <div className="container mx-auto px-6 flex justify-between items-center max-w-6xl">
+          <a href="#top" className="text-2xl font-bold font-sora text-white flex items-center gap-2">
+            <Code2 className="text-[#00D4FF]" />
+            <span>Dev<span className="text-gradient">.</span>Portfolio</span>
+          </a>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex gap-8 items-center">
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-sm font-medium hover:text-[#00D4FF] transition-colors"
+              >
+                {link.name}
+              </a>
+            ))}
+          </div>
+
+          {/* Mobile Toggle */}
+          <button
+            className="md:hidden text-white"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 glass-panel bg-[#0D1B2A]/95 flex flex-col justify-center items-center">
+          <button
+            className="absolute top-6 right-6 text-white"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <div className="flex flex-col gap-8 text-center">
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-2xl font-sora font-semibold text-white hover:text-[#00D4FF] transition-colors"
+              >
+                {link.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Hero Section */}
+      <section id="top" className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#1B2838]/50 via-[#0D1B2A] to-[#0D1B2A]">
+        {/* Abstract background elements */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00D4FF]/10 rounded-full blur-[120px] pointer-events-none transform-gpu"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#2E86C1]/10 rounded-full blur-[120px] pointer-events-none transform-gpu"></div>
+
+        <div className="container mx-auto px-6 max-w-6xl relative z-10">
+          <div className="max-w-3xl">
+            <Reveal delay={100}>
+              <h2 className="text-[#00D4FF] font-medium tracking-wider mb-4 uppercase text-sm">Bem-vindo ao meu espaço</h2>
+            </Reveal>
+            <Reveal delay={200}>
+              <h1 className="text-5xl md:text-7xl font-bold font-sora text-white mb-6 leading-tight">
+                Olá, eu sou <br />
+                <span className="text-gradient">{PORTFOLIO_DATA.hero.name}</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={300}>
+              <p className="text-xl md:text-2xl text-[#BDC3C7] mb-8 max-w-2xl leading-relaxed">
+                {PORTFOLIO_DATA.hero.title}.
+                <br className="hidden md:block" />
+                <span className="text-lg opacity-80 mt-2 block">{PORTFOLIO_DATA.hero.description}</span>
+              </p>
+            </Reveal>
+            <Reveal delay={400} className="flex flex-wrap gap-4">
+              <a href="#projects" className="px-8 py-4 rounded-lg bg-transparent border border-[#00D4FF] text-[#00D4FF] font-medium transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:bg-[#00D4FF]/10 flex items-center gap-2">
+                Ver Projetos <ChevronRight className="w-5 h-5" />
+              </a>
+              <a href="#contact" className="px-8 py-4 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 transition-colors border border-white/10">
+                Contactar-me
+              </a>
+            </Reveal>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce opacity-50">
+          <span className="text-xs uppercase tracking-widest mb-2">Scroll</span>
+          <div className="w-[1px] h-12 bg-gradient-to-b from-[#00D4FF] to-transparent"></div>
+        </div>
+      </section>
+
+      {/* 3. About Me */}
+      <section id="about" className="py-24 bg-[#0F2133]">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <SectionHeading title="Sobre Mim" subtitle="O meu percurso e o que me motiva." />
+              <div className="space-y-4 text-lg">
+                {PORTFOLIO_DATA.about.text.map((paragraph, idx) => (
+                  <Reveal key={idx} delay={idx * 100}>
+                    <p>{paragraph}</p>
+                  </Reveal>
+                ))}
+              </div>
+              <Reveal delay={400} className="mt-8">
+                <h4 className="text-white font-medium mb-4">Especialidades:</h4>
+                <div className="flex flex-wrap gap-3">
+                  {PORTFOLIO_DATA.about.specialties.map(spec => (
+                    <NeonBadge key={spec}>{spec}</NeonBadge>
+                  ))}
+                </div>
+              </Reveal>
+            </div>
+
+            <Reveal delay={300} className="relative">
+              <div className="relative aspect-square max-w-md mx-auto">
+                {/* Decorative borders behind image */}
+                <div className="absolute inset-0 border-2 border-[#2E86C1] rounded-2xl transform translate-x-4 translate-y-4 opacity-50"></div>
+                <div className="absolute inset-0 border-2 border-[#00D4FF] rounded-2xl transform -translate-x-4 -translate-y-4 opacity-50 z-0"></div>
+                {/* Placeholder Image */}
+                <img
+                  src="https://images.unsplash.com/photo-1549692520-acc6669e2f0c?auto=format&fit=crop&q=80&w=800"
+                  alt="Perfil"
+                  className="rounded-2xl relative z-10 w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                />
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Skills / Stack */}
+      <section id="skills" className="py-24">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <SectionHeading title="Skills Técnicas" subtitle="A minha caixa de ferramentas e tecnologias." />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+            {PORTFOLIO_DATA.skills.map((skillGroup, idx) => (
+              <Reveal key={skillGroup.category} delay={idx * 150}>
+                <div className="glass-panel p-6 rounded-2xl h-full neon-glow transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-[#00D4FF]/10 flex items-center justify-center text-[#00D4FF] mb-6">
+                    {skillGroup.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-4">{skillGroup.category}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {skillGroup.items.map(item => (
+                      <span key={item} className="px-3 py-1 text-sm bg-white/5 border border-white/10 rounded-md text-gray-300">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Projects */}
+      <section id="projects" className="py-24 bg-[#0F2133]">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <SectionHeading title="Projetos em Destaque" subtitle="Soluções construídas para resolver problemas reais." />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+            {PORTFOLIO_DATA.projects.map((project, idx) => (
+              <Reveal key={project.id} delay={idx * 150}>
+                <div
+                  className="glass-panel rounded-2xl overflow-hidden cursor-pointer neon-glow transition-all duration-300 group flex flex-col h-full"
+                  onClick={() => setSelectedProject(project)}
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={project.thumbnail}
+                      alt={project.title}
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2A] to-transparent opacity-80"></div>
+                    <div className="absolute top-4 left-4">
+                      <NeonBadge>{project.category}</NeonBadge>
+                    </div>
+                  </div>
+                  <div className="p-6 flex-1 flex flex-col">
+                    <h3 className="text-xl font-bold text-white mb-2 font-sora group-hover:text-[#00D4FF] transition-colors">{project.title}</h3>
+                    <p className="text-sm text-[#BDC3C7] mb-6 flex-1">{project.shortDescription}</p>
+                    <div className="flex gap-2 flex-wrap mb-4">
+                      {project.technologies.slice(0, 3).map(tech => (
+                        <span key={tech} className="text-xs text-gray-400 font-medium">#{tech}</span>
+                      ))}
+                      {project.technologies.length > 3 && <span className="text-xs text-gray-400 font-medium">+{project.technologies.length - 3}</span>}
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Experience */}
+      <section id="experience" className="py-24">
+        <div className="container mx-auto px-6 max-w-4xl">
+          <SectionHeading title="Trajetória Profissional" subtitle="A minha experiência ao longo dos anos." />
+
+          <div className="relative mt-16 border-l-2 border-[#00D4FF]/30 ml-4 md:ml-0 md:border-l-0 md:pl-0">
+            {/* Linha central Desktop */}
+            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full w-[2px] bg-[#00D4FF]/20"></div>
+
+            {PORTFOLIO_DATA.experience.map((exp, idx) => {
+              const isEven = idx % 2 === 0;
+              return (
+                <Reveal key={idx} delay={idx * 200} className="mb-12 relative w-full flex md:justify-between items-center pl-8 md:pl-0">
+                  {/* Ponto na timeline */}
+                  <div className="absolute w-4 h-4 rounded-full bg-[#0D1B2A] border-2 border-[#00D4FF] left-[-9px] md:left-1/2 md:-ml-2 z-10 shadow-[0_0_10px_rgba(0,212,255,0.8)]"></div>
+
+                  {/* Card Esquerda/Direita para Desktop */}
+                  <div className={`w-full md:w-[45%] ${isEven ? 'md:mr-auto' : 'md:ml-auto md:text-left'} glass-panel p-6 rounded-2xl text-left`}>
+                    <span className="text-[#00D4FF] font-medium text-sm mb-2 block">{exp.period}</span>
+                    <h3 className="text-xl font-bold text-white mb-1 font-sora">{exp.role}</h3>
+                    <h4 className="text-gray-400 mb-4">{exp.company}</h4>
+                    <p className="text-[#BDC3C7] text-sm leading-relaxed">{exp.description}</p>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Contact Section */}
+      <section id="contact" className="py-24 bg-gradient-to-b from-[#0F2133] to-[#0D1B2A]">
+        <div className="container mx-auto px-6 max-w-4xl text-center">
+          <Reveal>
+            <h2 className="text-4xl md:text-5xl font-bold font-sora text-white mb-6">Vamos Conversar?</h2>
+            <p className="text-xl text-[#BDC3C7] mb-12 max-w-2xl mx-auto">
+              Estou sempre aberto a novos desafios e oportunidades de colaboração. Sinta-se à vontade para enviar uma mensagem.
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-6">
+              {PORTFOLIO_DATA.contacts.map((contact, idx) => (
+                <a
+                  key={idx}
+                  href={contact.url}
+                  className="w-16 h-16 rounded-full glass-panel flex items-center justify-center text-white neon-glow transform hover:-translate-y-2 transition-all duration-300 group"
+                  title={contact.platform}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="group-hover:text-[#00D4FF] transition-colors">
+                    {contact.icon}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* 9. Footer */}
+      <footer className="py-8 border-t border-white/5 text-center">
+        <p className="text-[#BDC3C7] text-sm">
+          © {new Date().getFullYear()} {PORTFOLIO_DATA.hero.name}. Construído com foco no futuro.
+        </p>
+      </footer>
+
+      {/* Modal de Projeto */}
+      {selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-[#0D1B2A]/90 backdrop-blur-sm"
+            onClick={() => setSelectedProject(null)}
+          ></div>
+
+          <div className="relative bg-[#0F2133] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl z-10 animate-[fadeIn_0.3s_ease-out]">
+            <button
+              className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition-colors z-20 backdrop-blur-md"
+              onClick={() => setSelectedProject(null)}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <img
+              src={selectedProject.thumbnail}
+              alt={selectedProject.title}
+              className="w-full h-64 object-cover"
+            />
+
+            <div className="p-8">
+              <div className="mb-6">
+                <NeonBadge>{selectedProject.category}</NeonBadge>
+                <h2 className="text-3xl font-bold text-white mt-4 font-sora">{selectedProject.title}</h2>
+              </div>
+
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#00D4FF] mb-2 flex items-center gap-2">
+                    <Terminal className="w-5 h-5" /> O Desafio
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">{selectedProject.problem}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-[#00D4FF] mb-2 flex items-center gap-2">
+                    <Cpu className="w-5 h-5" /> A Solução
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">{selectedProject.solution}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-[#00D4FF] mb-2 flex items-center gap-2">
+                    <Database className="w-5 h-5" /> O Resultado
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">{selectedProject.result}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Stack Tecnológica</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.technologies.map(tech => (
+                      <span key={tech} className="px-3 py-1 bg-white/5 border border-white/10 rounded-md text-sm text-gray-200">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-white/10 flex justify-end">
+                  <a href="#" className="flex items-center gap-2 px-6 py-3 rounded-lg bg-[#00D4FF]/10 text-[#00D4FF] font-medium border border-[#00D4FF]/30 hover:bg-[#00D4FF]/20 transition-colors">
+                    <ExternalLink className="w-4 h-4" /> Visualizar Projeto
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Keyframes para o Modal */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}} />
+    </div>
+  );
+}
