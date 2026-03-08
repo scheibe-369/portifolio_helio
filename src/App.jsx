@@ -13,7 +13,7 @@ import { ContainerScroll } from '@/components/ui/container-scroll-animation';
 // ─── Estatísticas ─────────────────────────────────────────────────────────────
 const STATS = [
   { value: 60, suffix: '+', label: 'Alunos Mentoreados' },
-  { value: 3, suffix: '+', label: 'Anos de Experiência em Vendas' },
+  { value: 3, suffix: '+', label: 'Anos de Experiência na área' },
   { value: 35, suffix: '%', label: 'Aumento médio em vendas' },
   { value: 42, suffix: '%', label: 'Tickets resolvidos com IA' },
 ];
