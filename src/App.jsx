@@ -130,7 +130,7 @@ const PORTFOLIO_DATA = {
       solution: "Pipeline de OCR e LLMs para classificar e extrair campos específicos em segundos.",
       result: "Redução de 90% no tempo de triagem de documentos.",
       technologies: ["Python", "FastAPI", "React", "Anthropic API"],
-      thumbnail: "https://images.unsplash.com/photo-1568992687345-26948abc431a?auto=format&fit=crop&q=80&w=800",
+      thumbnail: "/saas-ia.png",
       category: "SaaS"
     },
     {
